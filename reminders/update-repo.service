@@ -1,0 +1,18 @@
+[Unit]
+Description=Update a repository under ROBOT_PATH
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=robot
+EnvironmentFile=/etc/robot_path.conf
+WorkingDirectory=${ROBOT_PATH}/aesir
+Environment=REPO_LIST_FILE=/etc/robot_repos.conf
+Environment=BRANCH_OVERRIDE=
+ExecStart=/bin/bash -c 'exec "${ROBOT_PATH}/update_repo.sh" "${REPO_LIST_FILE}" "${BRANCH_OVERRIDE}"'
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

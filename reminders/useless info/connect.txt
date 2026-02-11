@@ -1,0 +1,10 @@
+/home/aesir/.ssh/id_rsa
+smb://[ip]/host
+/etc/samba/smb.conf
+
+Cloudflared shh:
+ssh -o ProxyCommand="cloudflared access ssh --hostname ssh.[dom].com" \
+  aesir@ssh.[dom].com
+
+
+sshfs aesir@ssh.[dom].com:${ROBOT_PATH} ~/remote   -o ProxyCommand="cloudflared access ssh --hostname ssh.[dom].com"

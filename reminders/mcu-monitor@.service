@@ -1,0 +1,25 @@
+[Unit]
+Description=MCU monitor (%I)
+After=dev-%i.device
+BindsTo=dev-%i.device
+
+[Service]
+Type=simple
+User=robot
+Group=dialout
+EnvironmentFile=/etc/robot_path.conf
+ExecStart=${ROBOT_PATH}/mcu_monitor.sh %I
+Restart=on-failure
+RestartSec=2s
+StandardOutput=journal
+StandardError=journal
+
+# Seguridad básica
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
+

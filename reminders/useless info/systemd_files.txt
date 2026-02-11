@@ -1,0 +1,16 @@
+Udev files:
+/etc/udev/rules.d/00-teensy-rules
+
+Systemd files created:
+/etc/systemd/system/update_repo.service
+/etc/systemd/system/mcu_monitor@.service
+
+
+sudo useradd -r -s /usr/sbin/nologin robot
+sudo usermod -aG dialout robot
+
+(poner el directorio del robot)
+export ROBOT_PATH=$PWD
+
+sudo apt install -y teensy-loader-cli
+sudo setcap cap_sys_rawio+ep $(which teensy-loader-cli)

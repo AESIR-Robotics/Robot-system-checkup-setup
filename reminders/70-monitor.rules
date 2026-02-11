@@ -1,0 +1,9 @@
+# Do not touch anything after the line skip
+# The first line can be used for customization and indentification of your device
+# This is an example i have for my teensy
+# You can add more devices, just meake sure thay also have the second line configurationss
+
+SUBSYSTEM=="tty", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04*", ATTRS{serial}=="6887290", SYMLINK+="teensy_main", \
+TAG+="systemd", ENV{SYSTEMD_WANTS}="mcu-monitor@%k.service", GROUP="dialout"
+
+
