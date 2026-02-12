@@ -8,17 +8,11 @@ Type=simple
 User=robot
 Group=dialout
 EnvironmentFile=/etc/robot_path.conf
-ExecStart=home/robot/mcu_monitor.sh %I
+ExecStart=/home/robot/mcu_monitor.sh %i
 Restart=on-failure
 RestartSec=2s
 StandardOutput=journal
 StandardError=journal
-
-# Seguridad básica
-NoNewPrivileges=yes
-ProtectSystem=full
-ProtectHome=yes
-PrivateTmp=yes
 
 [Install]
 WantedBy=multi-user.target

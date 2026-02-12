@@ -5,6 +5,4 @@ if [ ! -f "$FILE" ]; then
     exit 1
 fi
 
-inotifywait -m -e modify "$FILE" | while read; do
-  tail -n 5 "$FILE"
-done
+watch -n 0.2 "tail -n 5 "$FILE""

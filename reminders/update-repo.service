@@ -1,5 +1,5 @@
 [Unit]
-Description=Update a repository under ROBOT_PATH
+Description=update a repository under ROBOT_PATH
 After=network-online.target
 Wants=network-online.target
 

@@ -1,20 +1,19 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # mcu_monitor.sh
 # Invocado por udev con el nombre del dispositivo (ej: ttyACM0)
 
 DEV="${1:-}"
-ROBOT_PATH="${ROBOT_PATH:-/opt/robot}"
-FIRMWARE="${ROBOT_PATH}/firmware"
-LOG_DIR="${ROBOT_PATH}/logs"
-LOG="${LOG_DIR}/mcu_monitor.log"
-TRIGGER="${FIRMWARE}/connect.txt"
-FLASH_SCRIPT="${FIRMWARE}/flash.sh"
 
 if [ -z "$DEV" ]; then
   echo "ERROR: no device name received"
   exit 1
+fi
+
+
+if [ -f /etc/robot_path.conf ]; then
+  source /etc/robot_path.conf || true
 fi
 
 if [ -z "$ROBOT_PATH" ] || [ ! -d "$ROBOT_PATH" ]; then
@@ -22,11 +21,18 @@ if [ -z "$ROBOT_PATH" ] || [ ! -d "$ROBOT_PATH" ]; then
   exit 1
 fi
 
+FIRMWARE="${ROBOT_PATH}/firmware"
+LOG_DIR="${ROBOT_PATH}/logs"
+LOG="${LOG_DIR}/mcu_monitor.log"
+TRIGGER="${FIRMWARE}/connect.txt"
+FLASH_SCRIPT="${FIRMWARE}/flash.sh"
+
 mkdir -p "$LOG_DIR"
 
 log() {
   echo "$(date '+%F %T') [$$] $*" | tee -a "$LOG"
 }
+log ""
 
 DEVICE_PATH="/dev/$DEV"
 
@@ -40,7 +46,7 @@ log "MCU connected: $DEVICE_PATH"
 # Get udev properties
 
 if UDEV_PROPS=$(udevadm info -q property -n "$DEVICE_PATH" 2>/dev/null); then
-  log "udev props: $(echo "$UDEV_PROPS" | tr '\n' ' | ')"
+  log "udev props: $(echo "$UDEV_PROPS" | grep -E "ID_VENDOR|ID_MODEL|ID_SERIAL" | tr '\n' ' | ')"
 else
   log "WARN: could not retrieve udev properties"
 fi
@@ -64,4 +70,10 @@ fi
 log "MCU ready: $DEVICE_PATH"
 
 # Keep service alive
-trap 'log "MCU disconnected: $DEVICE_PATH"; exit 0' SIGTERM
+trap 'log "Terminated by user unknown device stats"; exit 0' SIGINT
+trap 'log "MCU disconnected: $DEVICE_PATH"; exit 0' EXIT
+
+
+sleep infinity &
+
+wait $!

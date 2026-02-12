@@ -19,9 +19,9 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-echo "Installing basic dependencies..."
-apt update
-apt install -y git python3-pip avrdude teensy-loader-cli minicom || true
+# echo "Installing basic dependencies..."
+# apt update
+# apt install -y git python3-pip avrdude teensy-loader-cli minicom || true
 
 echo ""
 echo "Creating user 'robot' (if it does not exist) and adding it to dialout group"
@@ -54,7 +54,7 @@ usermod -aG "$(id -gn)" robot || true
 echo ""
 echo "Generando clave ssh para github"
 mkdir -p /home/robot/.ssh
-chmod 700 /home/robot/.ssh
+chmod -R 700 /home/robot/.ssh
 
 sudo -u robot ssh-keyscan github.com >> /home/robot/.ssh/known_hosts
 chmod 666 /home/robot/.ssh/known_hosts

@@ -3,12 +3,9 @@ set -euo pipefail
 
 # firmware/flash.sh
 # Soporta flasheo basado en VID/PID. Busca el dispositivo en /dev y elige
-# herramienta adecuada (teensy-loader-cli, avrdude, esptool) y el firmware
+# herramienta adecuada (teensy_loader_cli, avrdude, esptool) y el firmware
 # apropiado dentro de $FIRMWARE.
 DEV="${1:-}"
-VID_ARG="${2:-}"
-PID_ARG="${3:-}"
-
 if [ -z "$ROBOT_PATH" ]; then
   echo "ERROR: ROBOT_PATH not set"
   exit 1
@@ -21,16 +18,6 @@ LOG="${LOG_DIR}/mcu_flash.log"
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$LOG"; }
 
-if [ -z "$VID_ARG" ] || [ -z "$PID_ARG" ]; then
-  VID_ARG=$(echo "$UDEV_PROPS" | awk -F= '/^ID_VENDOR_ID=/ {print $2; exit}')
-  PID_ARG=$(echo "$UDEV_PROPS" | awk -F= '/^ID_MODEL_ID=/ {print $2; exit}')
-fi
-
-if [ -z "$VID_ARG" ] || [ -z "$PID_ARG" ]; then
-  log "WARN: couldnt get VID/PID from udev"
-  exit 1
-fi
-
 detect_board_type() {
   local dev="$1"
   props=$(udevadm info -q property -n "$dev" 2>/dev/null || true)
@@ -39,8 +26,8 @@ detect_board_type() {
   idvid=$(echo "$props" | awk -F= '/^ID_VENDOR_ID=/ {print tolower($2); exit}')
   idpid=$(echo "$props" | awk -F= '/^ID_MODEL_ID=/ {print tolower($2); exit}')
 
-  if [[ "$idvendor" == *"teensy"* ]] || [[ "$idvid" == "16c0" ]]; then
-    echo "teensy"
+  if [[ "$idpid" == "0483" ]] || [[ "$idvid" == "16c0" ]]; then
+    echo "teensy TEENSY40"
     return
   fi
   if [[ "$idmodel" == *"esp"* ]] || [[ "$idvendor" == *"esp"* ]] || [[ "$idvendor" == *"espressif"* ]]; then
@@ -55,13 +42,10 @@ detect_board_type() {
   echo "unknown"
 }
 
-ensure_teensy_loader() {
-  if ! command -v teensy-loader-cli >/dev/null 2>&1; then
-    log "teensy-loader-cli no encontrado, intentando instalar (apt)..."
+ensure_teensy() {
+  if ! command -v teensy_loader_cli >/dev/null 2>&1; then
+    log "teensy_loader_cli no encontrado, instalando..."
     sudo apt update && sudo apt install -y teensy-loader-cli || true
-    if command -v teensy-loader-cli >/dev/null 2>&1; then
-      sudo setcap cap_sys_rawio+ep $(which teensy-loader-cli) || true
-    fi
   fi
 }
 
@@ -84,40 +68,33 @@ ensure_esptool() {
 }
 
 main() {
-  log "Flash script iniciado"
-  local dev="$DEV"
+  log "Initializing flash script"
 
-  if [ -z "$dev" ]; then
-    log "ERROR: no se encontró dispositivo para flashear"
-    return 1
-  fi
-  log "Dispositivo detectado: $dev"
+  info_brd=$(detect_board_type "$DEV")
+  log "Tipo detectado: $info_brd"
 
-  board=$(detect_board_type "$dev")
-  log "Tipo detectado: $board"
+  read -r board mmcu <<< "$info_brd"
 
   # Elegir firmware en carpeta
   firmware_bin=$(ls -t "$FIRMWARE_DIR"/*.bin 2>/dev/null | head -n1 || true)
   firmware_hex=$(ls -t "$FIRMWARE_DIR"/*.hex 2>/dev/null | head -n1 || true)
-
+  
   case "$board" in
     teensy)
-      ensure_teensy_loader
+      if [ -z "$info_brd" ]; then
+        log "ERROR: no mmcu version detected"
+        return 1
+      fi
+
       if [ -z "$firmware_hex" ]; then
         log "ERROR: no se encontró archivo .hex en $FIRMWARE_DIR para Teensy"
         return 1
       fi
-      log "Reseteando Teensy (si aplica)"
-      teensy-loader-cli -b || true
-      sleep 1
-      log "Flasheando $firmware_hex en $dev"
-      teensy-loader-cli -mmcu=auto -w "$firmware_hex" || {
-        log "teensy-loader-cli falló, intentando sin -mmcu"
-        teensy-loader-cli -w "$firmware_hex"
-      }
+      log "Flasheando $firmware_hex en $DEV"
+      teensy_loader_cli -s -mmcu="$mmcu" -wv "$firmware_hex" 
       ;;
     esp32)
-      ensure_esptool
+      # ensure_esptool
       if [ -z "$firmware_bin" ]; then
         log "ERROR: no se encontró archivo .bin en $FIRMWARE_DIR para ESP32"
         return 1
@@ -128,54 +105,29 @@ main() {
         log "ERROR: esptool no está disponible"
         return 1
       fi
-      log "Flasheando ESP32 en puerto $dev con $firmware_bin"
+      log "Flasheando ESP32 en puerto $DEV con $firmware_bin"
       # Intentar comando común
-      "$ESPL" --chip auto --port "$dev" --baud 460800 write_flash -z 0x1000 "$firmware_bin"
+      "$ESPL" --chip auto --port "$DEV" --baud 460800 write_flash -z 0x1000 "$firmware_bin"
       ;;
     arduino)
-      ensure_avrdude
+      # ensure_avrdude
       if [ -z "$firmware_hex" ]; then
         log "ERROR: no se encontró archivo .hex en $FIRMWARE_DIR para Arduino"
         return 1
       fi
       # Intentar flasheo con avrdude (asumiendo bootloader Arduino UNO/328p)
-      log "Flasheando Arduino en $dev con $firmware_hex"
-      avrdude -v -patmega328p -carduino -P"$dev" -b115200 -D -Uflash:w:"$firmware_hex":i || {
+      log "Flasheando Arduino en $DEV con $firmware_hex"
+      avrdude -v -patmega328p -carduino -P"$DEV" -b115200 -D -Uflash:w:"$firmware_hex":i || {
         log "avrdude falló, inténtelo manualmente o especifique el MCU/programmer correcto"
         return 1
       }
       ;;
     *)
-      log "Tipo desconocido, aplicando heurística: preferir .bin->ESP, .hex->teensy/avr"
-      if [ -n "$firmware_bin" ]; then
-        ensure_esptool
-        ESPL=$(command -v esptool.py || command -v esptool || echo "")
-        if [ -n "$ESPL" ]; then
-          log "Usando esptool para flashear $firmware_bin"
-          "$ESPL" --chip auto --port "$dev" --baud 460800 write_flash -z 0x1000 "$firmware_bin"
-        else
-          log "esptool no disponible"
-          return 1
-        fi
-      elif [ -n "$firmware_hex" ]; then
-        # try teensy first
-        ensure_teensy_loader
-        if command -v teensy-loader-cli >/dev/null 2>&1; then
-          teensy-loader-cli -b || true
-          sleep 1
-          teensy-loader-cli -mmcu=auto -w "$firmware_hex" || teensy-loader-cli -w "$firmware_hex"
-        else
-          ensure_avrdude
-          avrdude -v -patmega328p -carduino -P"$dev" -b115200 -D -Uflash:w:"$firmware_hex":i || true
-        fi
-      else
-        log "No se encontraron binarios/hex para flashear en $FIRMWARE_DIR"
-        return 1
-      fi
+      log "Unknown device"
       ;;
   esac
 
-  log "Flasheo finalizado"
+  log "Finishing flash"
 }
 
 main
