@@ -8,13 +8,28 @@ set -euo pipefail
 DEV="${1:-}"
 VID_ARG="${2:-}"
 PID_ARG="${3:-}"
-ROBOT_PATH="${ROBOT_PATH:-/opt/robot}"
-FIRMWARE_DIR="${FIRMWARE_DIR:-${ROBOT_PATH}/firmware}"
+
+if [ -z "$ROBOT_PATH" ]; then
+  echo "ERROR: ROBOT_PATH not set"
+  exit 1
+fi
+
+FIRMWARE_DIR="${ROBOT_PATH}/firmware"
 LOG_DIR="${ROBOT_PATH}/logs"
 mkdir -p "$LOG_DIR"
 LOG="${LOG_DIR}/mcu_flash.log"
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$LOG"; }
+
+if [ -z "$VID_ARG" ] || [ -z "$PID_ARG" ]; then
+  VID_ARG=$(echo "$UDEV_PROPS" | awk -F= '/^ID_VENDOR_ID=/ {print $2; exit}')
+  PID_ARG=$(echo "$UDEV_PROPS" | awk -F= '/^ID_MODEL_ID=/ {print $2; exit}')
+fi
+
+if [ -z "$VID_ARG" ] || [ -z "$PID_ARG" ]; then
+  log "WARN: couldnt get VID/PID from udev"
+  exit 1
+fi
 
 detect_board_type() {
   local dev="$1"

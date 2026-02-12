@@ -14,3 +14,7 @@ export ROBOT_PATH=$PWD
 
 sudo apt install -y teensy-loader-cli
 sudo setcap cap_sys_rawio+ep $(which teensy-loader-cli)
+
+
+awk
+sed
