@@ -7,10 +7,7 @@ Wants=network-online.target
 Type=oneshot
 User=robot
 EnvironmentFile=/etc/robot_path.conf
-WorkingDirectory=${ROBOT_PATH}/aesir
-Environment=REPO_LIST_FILE=/etc/robot_repos.conf
-Environment=BRANCH_OVERRIDE=
-ExecStart=/bin/bash -c 'exec "${ROBOT_PATH}/update_repo.sh" "${REPO_LIST_FILE}" "${BRANCH_OVERRIDE}"'
+ExecStart=/home/robot/update_repo.sh /etc/robot_repos.conf
 StandardOutput=journal
 StandardError=journal
 
