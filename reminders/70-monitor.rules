@@ -7,4 +7,7 @@
 SUBSYSTEM=="tty", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="04*", ATTRS{serial}=="6887290", SYMLINK+="teensy_main", \
 TAG+="systemd", ENV{SYSTEMD_WANTS}="mcu-monitor@%k.service", GROUP="dialout"
 
+SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="1001", SYMLINK+="esp32_main", \
+TAG+="systemd", ENV{SYSTEMD_WANTS}="mcu-monitor@%k.service", GROUP="dialout"
+
 

@@ -44,7 +44,6 @@ fi
 log "MCU connected: $DEVICE_PATH"
 
 # Get udev properties
-
 if UDEV_PROPS=$(udevadm info -q property -n "$DEVICE_PATH" 2>/dev/null); then
   log "udev props: $(echo "$UDEV_PROPS" | grep -E "ID_VENDOR|ID_MODEL|ID_SERIAL" | tr '\n' ' | ')"
 else
@@ -52,16 +51,23 @@ else
 fi
 
 # Flash
-
 if [ -f "$TRIGGER" ]; then
   log "Trigger detected -> attempting flash"
 
   if [ -x "$FLASH_SCRIPT" ]; then
+
+    systemctl stop "mcu_monitor@${DEV}.service"
+    sleep 1
+
     if "$FLASH_SCRIPT" "$DEV"; then
       log "Flash completed successfully"
     else
       log "Flash script failed"
     fi
+
+    systemctl start "mcu_monitor@${DEV}.service"
+    sleep 1
+
   else
     log "Flash script missing or not executable: $FLASH_SCRIPT"
   fi

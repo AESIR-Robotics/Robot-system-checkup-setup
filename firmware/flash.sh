@@ -11,10 +11,15 @@ if [ -z "$ROBOT_PATH" ]; then
   exit 1
 fi
 
-FIRMWARE_DIR="${ROBOT_PATH}/firmware"
+FIRMWARE_DIR="${ROBOT_PATH}/firmware/send"
 LOG_DIR="${ROBOT_PATH}/logs"
 mkdir -p "$LOG_DIR"
 LOG="${LOG_DIR}/mcu_flash.log"
+
+if [ ! -d $FIRMWARE_DIR]; then
+  echo "ERROR: directory ${FIRMWARE_DIR} not found"
+  exit 1
+fi
 
 log() { echo "$(date '+%F %T') $*" | tee -a "$LOG"; }
 
@@ -76,8 +81,14 @@ main() {
   read -r board mmcu <<< "$info_brd"
 
   # Elegir firmware en carpeta
-  firmware_bin=$(ls -t "$FIRMWARE_DIR"/*.bin 2>/dev/null | head -n1 || true)
-  firmware_hex=$(ls -t "$FIRMWARE_DIR"/*.hex 2>/dev/null | head -n1 || true)
+  firmware_hex=$(find "$FIRMWARE_DIR" -type f -name "*.hex" -printf "%T@ %p\n" 2>/dev/null \
+    | sort -nr \
+    | head -n 1 \
+    | cut -d' ' -f2-)
+  firmware_bin=$(find "$FIRMWARE_DIR" -type f -name "*.bin" -printf "%T@ %p\n" 2>/dev/null \
+    | sort -nr \
+    | head -n 1 \
+    | cut -d' ' -f2-)
   
   case "$board" in
     teensy)
@@ -93,7 +104,7 @@ main() {
       log "Flasheando $firmware_hex en $DEV"
       teensy_loader_cli -s -mmcu="$mmcu" -wv "$firmware_hex" 
       ;;
-    esp32)
+    espressif)
       # ensure_esptool
       if [ -z "$firmware_bin" ]; then
         log "ERROR: no se encontró archivo .bin en $FIRMWARE_DIR para ESP32"

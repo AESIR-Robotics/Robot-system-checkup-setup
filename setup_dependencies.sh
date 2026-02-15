@@ -68,7 +68,6 @@ cat /home/robot/.ssh/id_ed25519.pub
 echo "Add this key to your github username as a new SSH key (recommend creating a new user)"
 echo "Also do not forget to set the origin remote with ssh: "
 echo "git remote set-url origin git@github.com:[owner]/[repo].git"
-echo "Lastly make sure the owner of the repository is the user 'robot' (man chown)"
 
 echo ""
 echo "Installing files in the system"
@@ -101,6 +100,23 @@ if command -v teensy-loader-cli >/dev/null 2>&1; then
   setcap cap_sys_rawio+ep "$(command -v teensy-loader-cli)" || true
 fi
 chmod -R g+X "$ROBOT_PATH"
+
+echo ""
+echo "Creando regla polkit para controlar servicios template..."
+
+cat >/etc/polkit-1/rules.d/49-mcu-monitor.rules <<EOF
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units") {
+        if (subject.user == robot) {
+            var unit = action.lookup("unit");
+
+            if (unit && unit.startsWith("mcu_monitor@")) {
+                return polkit.Result.YES;
+            }
+        }
+    }
+});
+EOF
 
 echo ""
 echo "Reloading rules udev y systemd"
