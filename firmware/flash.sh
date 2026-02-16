@@ -12,16 +12,14 @@ if [ -z "$ROBOT_PATH" ]; then
 fi
 
 FIRMWARE_DIR="${ROBOT_PATH}/firmware/send"
-LOG_DIR="${ROBOT_PATH}/logs"
 mkdir -p "$LOG_DIR"
-LOG="${LOG_DIR}/mcu_flash.log"
 
 if [ ! -d $FIRMWARE_DIR]; then
   echo "ERROR: directory ${FIRMWARE_DIR} not found"
   exit 1
 fi
 
-log() { echo "$(date '+%F %T') $*" | tee -a "$LOG"; }
+log() { echo "$(date '+%F %T') $*" ; }
 
 detect_board_type() {
   local dev="$1"
@@ -118,7 +116,8 @@ main() {
       fi
       log "Flasheando ESP32 en puerto $DEV con $firmware_bin"
       # Intentar comando común
-      "$ESPL" --chip auto --port "$DEV" --baud 460800 write_flash -z 0x1000 "$firmware_bin"
+      "$ESPL" --chip esp32c3 --port "$DEV" erase_flash
+      "$ESPL" --chip esp32c3 --port "$DEV" --baud 460800 write_flash -z 0x0 "$firmware_bin"
       ;;
     arduino)
       # ensure_avrdude

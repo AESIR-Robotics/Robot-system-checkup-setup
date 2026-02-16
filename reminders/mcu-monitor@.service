@@ -6,13 +6,19 @@ BindsTo=dev-%i.device
 [Service]
 Type=simple
 User=robot
-Group=dialout
+Group=robot
+SupplementaryGroups=robotdata dialout
+UMask=0002
 EnvironmentFile=/etc/robot_path.conf
-ExecStart=/home/robot/mcu_monitor.sh %i
-Restart=on-failure
-RestartSec=2s
+ExecStart=/opt/robot/scripts/mcu_monitor.sh %i
+Restart=always
+RestartSec=2
 StandardOutput=journal
 StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target

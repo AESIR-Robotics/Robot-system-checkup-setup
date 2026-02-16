@@ -1,15 +1,22 @@
 [Unit]
-Description=update a repository under ROBOT_PATH
+Description=Update repositories under ROBOT_PATH
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=robot
+Group=robot
+SupplementaryGroups=robotdata
+UMask=0002
 EnvironmentFile=/etc/robot_path.conf
-ExecStart=/home/robot/update_repo.sh /etc/robot_repos.conf
+ExecStart=/opt/robot/scripts/update_repo.sh /etc/robot_repos.conf
 StandardOutput=journal
 StandardError=journal
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target

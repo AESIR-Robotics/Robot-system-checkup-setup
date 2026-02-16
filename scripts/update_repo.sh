@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+warn() {
+    echo "[WARN] $1" >&2
+}
+
+error() {
+    echo "[ERROR] $1" >&2
+}
+
 # Try to source system-wide ROBOT_PATH if available
 if [ -f /etc/robot_path.conf ]; then
   # shellcheck disable=SC1090
@@ -15,16 +23,12 @@ fi
 REPO_LIST_FILE="${1:-${REPO_LIST_FILE:-/etc/robot_repos.conf}}"
 REPOS_DIR="${REPOS_DIR:-${ROBOT_PATH}/Repos}"
 
-LOG_DIR="${ROBOT_PATH}/logs" 
-mkdir -p "$LOG_DIR"
-LOG="${LOG_DIR}/update_repo.log"
 
-exec >> "$LOG" 2>&1
 echo ""
 echo "====== $(date) ======"
 
 if [ ! -f "$REPO_LIST_FILE" ]; then
-  echo "ERROR: file in repository list not found: $REPO_LIST_FILE"
+  error "File in repository list not found: $REPO_LIST_FILE"
   exit 1
 fi
 
@@ -51,7 +55,7 @@ while read -r line || [ -n "$line" ]; do
   echo "Processing repo: $repo_rel -> $repo_path (branch: $target_branch)"
 
   if [ ! -d "$repo_path/.git" ]; then
-    echo "WARN: $repo_path is not a valid repository, skipping"
+    warn "$repo_path is not a valid repository, skipping"
     continue
   fi
 
@@ -63,7 +67,7 @@ while read -r line || [ -n "$line" ]; do
   REMOTE=$(git rev-parse "origin/${target_branch}" 2>/dev/null || true)
 
   if [ -z "$REMOTE" ]; then
-    echo "Warn: origin/${target_branch} doesnt exist for $repo_rel, creating local branch if necesary"
+    warn "origin/${target_branch} doesnt exist for $repo_rel, creating local branch if necesary"
     git checkout "$target_branch" 2>/dev/null || git checkout -b "$target_branch" || true
     # no remote to reset to
     continue

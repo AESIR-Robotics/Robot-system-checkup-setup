@@ -22,15 +22,11 @@ if [ -z "$ROBOT_PATH" ] || [ ! -d "$ROBOT_PATH" ]; then
 fi
 
 FIRMWARE="${ROBOT_PATH}/firmware"
-LOG_DIR="${ROBOT_PATH}/logs"
-LOG="${LOG_DIR}/mcu_monitor.log"
 TRIGGER="${FIRMWARE}/connect.txt"
 FLASH_SCRIPT="${FIRMWARE}/flash.sh"
 
-mkdir -p "$LOG_DIR"
-
 log() {
-  echo "$(date '+%F %T') [$$] $*" | tee -a "$LOG"
+  echo "$(date '+%F %T') [$$] $*" 
 }
 log ""
 
