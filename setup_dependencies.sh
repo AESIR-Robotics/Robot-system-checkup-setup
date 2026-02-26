@@ -65,10 +65,14 @@ echo "Installing system files..."
 install -m 644 "$REMINDERS_DIR/mcu-monitor@.service" /etc/systemd/system/
 install -m 644 "$REMINDERS_DIR/update-repo.service" /etc/systemd/system/
 
-echo "Creating env file..."
+echo "Creating repository handler conf file..."
 
 echo "ROBOT_PATH=\"$ROBOT_PATH\"" > /etc/robot_path.conf
 chmod 644 /etc/robot_path.conf
+
+echo "Creating env file..."
+
+install -m 644 "$REMINDERS_DIR/robot_repos.conf" /etc/robot_repos.conf
 
 echo "Installing polkit rule..."
 
@@ -98,6 +102,7 @@ Instalation complete.
 - Installed systemd unit: /etc/systemd/system/mcu-monitor@.service
 - Installed systemd unit: /etc/systemd/system/update-repo.service
 - Udev rules installed in /etc/udev/rules.d/70-monitor.rules
+- Installed configuration file: /etc/robot_repos.conf
 
 Note: Services did not activate automatically. To activate the monitor
 for a specific device (ex: ttyACM0), execute:

@@ -12,7 +12,6 @@ if [ -z "$ROBOT_PATH" ]; then
 fi
 
 FIRMWARE_DIR="${ROBOT_PATH}/firmware/send"
-mkdir -p "$LOG_DIR"
 
 if [ ! -d $FIRMWARE_DIR]; then
   echo "ERROR: directory ${FIRMWARE_DIR} not found"
@@ -102,7 +101,7 @@ main() {
       log "Flasheando $firmware_hex en $DEV"
       teensy_loader_cli -s -mmcu="$mmcu" -wv "$firmware_hex" 
       ;;
-    espressif)
+    esp32)
       # ensure_esptool
       if [ -z "$firmware_bin" ]; then
         log "ERROR: no se encontró archivo .bin en $FIRMWARE_DIR para ESP32"
