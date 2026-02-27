@@ -1,6 +1,33 @@
 #!/bin/bash
 set -euo pipefail
 
+safe_install() {
+    local src="$1"
+    local dst_dir="$2"
+    local mode="${3:-750}"
+    local owner="${4:-robot}"
+    local group="${5:-robotdata}"
+
+    local filename
+    filename=$(basename "$src")
+
+    local dst="$dst_dir/$filename"
+
+    # Obtener rutas absolutas reales
+    local src_real dst_real
+    src_real=$(realpath "$src")
+    dst_real=$(realpath -m "$dst")
+
+    if [[ "$src_real" == "$dst_real" ]]; then
+        echo "Source and target identical for $filename — fixing permissions only"
+        chmod "$mode" "$dst"
+        chown "$owner:$group" "$dst"
+        return 0
+    fi
+
+    install -m "$mode" -o "$owner" -g "$group" "$src" "$dst_dir/"
+}
+
 ROBOT_PATH="/opt/robot"
 SERVICE_DIR="$ROBOT_PATH/scripts"
 REMINDERS_DIR="$PWD/reminders"
@@ -39,8 +66,8 @@ chmod -R 2775 "$ROBOT_PATH"
 
 echo "Copying scripts..."
 
-install -m 750 -o robot -g robotdata "$SCRIPT_DIR/mcu_monitor.sh" "$SERVICE_DIR/"
-install -m 750 -o robot -g robotdata "$SCRIPT_DIR/update_repo.sh" "$SERVICE_DIR/"
+safe_install "$SCRIPT_DIR/mcu_monitor.sh" "$SERVICE_DIR/" 
+safe_install "$SCRIPT_DIR/update_repo.sh" "$SERVICE_DIR/"
 
 echo "Fixing SSH for robot..."
 

@@ -6,6 +6,7 @@ set -euo pipefail
 # herramienta adecuada (teensy_loader_cli, avrdude, esptool) y el firmware
 # apropiado dentro de $FIRMWARE.
 DEV="${1:-}"
+USER_FW="${2:-}"
 if [ -z "$ROBOT_PATH" ]; then
   echo "ERROR: ROBOT_PATH not set"
   exit 1
@@ -77,15 +78,48 @@ main() {
 
   read -r board mmcu <<< "$info_brd"
 
-  # Elegir firmware en carpeta
-  firmware_hex=$(find "$FIRMWARE_DIR" -type f -name "*.hex" -printf "%T@ %p\n" 2>/dev/null \
-    | sort -nr \
-    | head -n 1 \
-    | cut -d' ' -f2-)
-  firmware_bin=$(find "$FIRMWARE_DIR" -type f -name "*.bin" -printf "%T@ %p\n" 2>/dev/null \
-    | sort -nr \
-    | head -n 1 \
-    | cut -d' ' -f2-)
+  firmware_hex=""
+  firmware_bin=""
+
+  if [[ -n "$USER_FW" ]]; then
+
+    # Si no existe como ruta directa, buscar dentro de FIRMWARE_DIR
+    if [[ ! -f "$USER_FW" ]]; then
+      if [[ -f "$FIRMWARE_DIR/$USER_FW" ]]; then
+        USER_FW="$FIRMWARE_DIR/$USER_FW"
+      else 
+        log "ERROR: archivo especificado no existe: $USER_FW"
+        return 1
+      fi
+    fi
+
+    ext="${USER_FW##*.}"
+    ext=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+
+    case "$ext" in
+      hex)
+        firmware_hex="$USER_FW"
+        ;;
+      bin)
+        firmware_bin="$USER_FW"
+        ;;
+      *)
+        log "ERROR: extensión no soportada. Use .hex o .bin"
+        return 1
+        ;;
+    esac
+
+  else
+    firmware_hex=$(find "$FIRMWARE_DIR" -type f -name "*.hex" -printf "%T@ %p\n" 2>/dev/null \
+      | sort -nr | head -n 1 | cut -d' ' -f2-)
+
+    firmware_bin=$(find "$FIRMWARE_DIR" -type f -name "*.bin" -printf "%T@ %p\n" 2>/dev/null \
+      | sort -nr | head -n 1 | cut -d' ' -f2-)
+  fi
+
+  log "Firmware seleccionado:"
+  [[ -n "$firmware_hex" ]] && log "HEX: $firmware_hex"
+  [[ -n "$firmware_bin" ]] && log "BIN: $firmware_bin"
   
   case "$board" in
     teensy)
