@@ -91,6 +91,7 @@ echo "Installing system files..."
 
 install -m 644 "$REMINDERS_DIR/mcu-monitor@.service" /etc/systemd/system/
 install -m 644 "$REMINDERS_DIR/update-repo.service" /etc/systemd/system/
+install -m 644 "$REMINDERS_DIR/70-monitor.rules" /etc/udev/rules.d/
 
 echo "Creating repository handler conf file..."
 
